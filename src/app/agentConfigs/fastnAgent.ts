@@ -136,7 +136,13 @@ export const callFastnAPI = tool({
     * For sending messages: If the user provides names for recipients, use a helper function (if available) to retrieve their Slack user IDs. If multiple matches occur for a name, you may need to ask the user to clarify. Send the message using the retrieved IDs.
     *Google Calendar:
         *Creating Meetings Requires a title and a date. state time and end time and zone should be US make sure you are passing time dont miss any parameters.
-   
+   * Google Sheets:
+        - IN the body you just need pass the title of the sheet. Dont pass any other parameters.
+        - Example =>  {
+            "properties": {
+              "title": "ask user to provide a title for the sheet or use a default title from context"
+            }
+          }
         * Current Date: ${now}
           `,
         },
