@@ -79,72 +79,6 @@ sequenceDiagram
   - You can modify the decision boundary by adding new items to the `# Allow List of Permitted Actions` section.
 3. To reduce cost, try using `gpt-4o-mini-realtime` for the chatAgent and/or `gpt-4.1-mini` for the supervisor model. To maximize intelligence on particularly difficult or high-stakes tasks, consider trading off latency and adding chain-of-thought to your supervisor prompt, or using an additional reasoning model-based supervisor that uses `o4-mini`.
 
-# Agentic Pattern 2: Sequential Handoffs
-
-This pattern is inspired by [OpenAI Swarm](https://github.com/openai/swarm) and involves the sequential handoff of a user between specialized agents. Handoffs are decided by the model and coordinated via tool calls, and possible handoffs are defined explicitly in an agent graph. A handoff triggers a session.update event with new instructions and tools. This pattern is effective for handling a variety of user intents with specialist agents, each of which might have long instructions and numerous tools.
-
-Here's a [video walkthrough](https://x.com/OpenAIDevs/status/1880306081517432936) showing how it works. You should be able to use this repo to prototype your own multi-agent realtime voice app in less than 20 minutes!
-
-![Screenshot of the Realtime API Agents Demo](/public/screenshot_handoff.png)
-*In this simple example, the user is transferred from a greeter agent to a haiku agent. See below for the simple, full configuration of this flow.*
-
-Configuration in `src/app/agentConfigs/simpleExample.ts`
-```typescript
-import { RealtimeAgent } from '@openai/agents/realtime';
-
-// Define agents using the OpenAI Agents SDK
-export const haikuWriterAgent = new RealtimeAgent({
-  name: 'haikuWriter',
-  handoffDescription: 'Agent that writes haikus.', // Context for the agent_transfer tool
-  instructions:
-    'Ask the user for a topic, then reply with a haiku about that topic.',
-  tools: [],
-  handoffs: [],
-});
-
-export const greeterAgent = new RealtimeAgent({
-  name: 'greeter',
-  handoffDescription: 'Agent that greets the user.',
-  instructions:
-    "Please greet the user and ask them if they'd like a haiku. If yes, hand off to the 'haikuWriter' agent.",
-  tools: [],
-  handoffs: [haikuWriterAgent], // Define which agents this agent can hand off to
-});
-
-// An Agent Set is just an array of the agents that participate in the scenario
-export default [greeterAgent, haikuWriterAgent];
-```
-## CustomerServiceRetail Flow
-
-This is a more complex, representative implementation that illustrates a customer service flow, with the following features:
-- A more complex agent graph with agents for user authentication, returns, sales, and a placeholder human agent for escalations.
-- An escalation by the [returns](https://github.com/openai/openai-realtime-agents/blob/60f4effc50a539b19b2f1fa4c38846086b58c295/src/app/agentConfigs/customerServiceRetail/returns.ts#L233) agent to `o4-mini` to validate and initiate a return, as an example high-stakes decision, using a similar pattern to the above.
-- Prompting models to follow a state machine, for example to accurately collect things like names and phone numbers with confirmation character by character to authenticate a user.
-  - To test this flow, say that you'd like to return your snowboard and go through the necessary prompts!
-
-Configuration in [src/app/agentConfigs/customerServiceRetail/index.ts](src/app/agentConfigs/customerServiceRetail/index.ts).
-```javascript
-import authentication from "./authentication";
-import returns from "./returns";
-import sales from "./sales";
-import simulatedHuman from "./simulatedHuman";
-import { injectTransferTools } from "../utils";
-
-authentication.downstreamAgents = [returns, sales, simulatedHuman];
-returns.downstreamAgents = [authentication, sales, simulatedHuman];
-sales.downstreamAgents = [authentication, returns, simulatedHuman];
-simulatedHuman.downstreamAgents = [authentication, returns, sales];
-
-const agents = injectTransferTools([
-  authentication,
-  returns,
-  sales,
-  simulatedHuman,
-]);
-
-export default agents;
-```
-
 ## Schematic
 
 This diagram illustrates a more advanced interaction flow defined in `src/app/agentConfigs/customerServiceRetail/`, including detailed events.
@@ -222,8 +156,3 @@ Assistant messages are checked for safety and compliance before they are shown i
 ## Pull Requests
 
 Feel free to open an issue or pull request and we'll do our best to review it. The spirit of this repo is to demonstrate the core logic for new agentic flows; PRs that go beyond this core scope will likely not be merged.
-
-# Core Contributors
-- Noah MacCallum - [noahmacca](https://x.com/noahmacca)
-- Ilan Bigio - [ibigio](https://github.com/ibigio)
-- Brian Fioca - [bfioca](https://github.com/bfioca)
