@@ -1,5 +1,6 @@
 import React from "react";
 import { SessionStatus } from "@/app/types";
+import type { RealtimeAgent } from '@openai/agents/realtime';
 
 interface BottomToolbarProps {
   sessionStatus: SessionStatus;
@@ -15,6 +16,11 @@ interface BottomToolbarProps {
   setIsAudioPlaybackEnabled: (val: boolean) => void;
   codec: string;
   onCodecChange: (newCodec: string) => void;
+  selectedAgent: string;
+  onAgentChange: (newAgent: string) => void;
+  selectedAgentName: string;
+  onAgentNameChange: (newAgentName: string) => void;
+  selectedAgentConfigSet: RealtimeAgent[] | null;
 }
 
 function BottomToolbar({
@@ -31,6 +37,11 @@ function BottomToolbar({
   setIsAudioPlaybackEnabled,
   codec,
   onCodecChange,
+  selectedAgent,
+  onAgentChange,
+  selectedAgentName,
+  onAgentNameChange,
+  selectedAgentConfigSet,
 }: BottomToolbarProps) {
   const isConnected = sessionStatus === "CONNECTED";
   const isConnecting = sessionStatus === "CONNECTING";
@@ -38,6 +49,16 @@ function BottomToolbar({
   const handleCodecChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCodec = e.target.value;
     onCodecChange(newCodec);
+  };
+
+  const handleAgentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newAgent = e.target.value;
+    onAgentChange(newAgent);
+  };
+
+  const handleAgentNameChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newAgentName = e.target.value;
+    onAgentNameChange(newAgentName);
   };
 
   function getConnectionButtonLabel() {
@@ -128,6 +149,39 @@ function BottomToolbar({
           Logs
         </label>
       </div>
+
+      <div className="flex flex-row items-center gap-2">
+        <div>Agent Set:</div>
+        <select
+          id="agent-set-select"
+          value={selectedAgent}
+          onChange={handleAgentChange}
+          disabled={isConnected}
+          className="border border-gray-300 rounded-md px-2 py-1 focus:outline-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
+        >
+          <option value="fastn">Fastn Tools</option>
+          <option value="fastnDocs">Fastn Docs</option>
+        </select>
+      </div>
+
+      {selectedAgentConfigSet && selectedAgentConfigSet.length > 1 && (
+        <div className="flex flex-row items-center gap-2">
+          <div>Agent:</div>
+          <select
+            id="agent-name-select"
+            value={selectedAgentName}
+            onChange={handleAgentNameChange}
+            disabled={isConnected}
+            className="border border-gray-300 rounded-md px-2 py-1 focus:outline-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            {selectedAgentConfigSet.map((agent) => (
+              <option key={agent.name} value={agent.name}>
+                {agent.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex flex-row items-center gap-2">
         <div>Codec:</div>

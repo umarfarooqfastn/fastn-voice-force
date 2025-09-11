@@ -1,6 +1,6 @@
-# Realtime API Agents Demo
+# Fastn Voice Force
 
-This is a demonstration of more advanced patterns for voice agents, using the OpenAI Realtime API and the OpenAI Agents SDK. 
+A voice-enabled AI assistant powered by the OpenAI Realtime API and OpenAI Agents SDK, featuring specialized agents for Fastn.ai tool integration and documentation assistance. 
 
 ## About the OpenAI Agents SDK
 
@@ -13,146 +13,137 @@ This project uses the [OpenAI Agents SDK](https://github.com/openai/openai-agent
 
 For full documentation, guides, and API references, see the official [OpenAI Agents SDK Documentation](https://github.com/openai/openai-agents-js#readme).
 
-**NOTE:** For a version that does not use the OpenAI Agents SDK, see the [branch without-agents-sdk](https://github.com/openai/openai-realtime-agents/tree/without-agents-sdk).
+## Features
 
-There are two main patterns demonstrated:
-1. **Chat-Supervisor:** A realtime-based chat agent interacts with the user and handles basic tasks, while a more intelligent, text-based supervisor model (e.g., `gpt-4.1`) is used extensively for tool calls and more complex responses. This approach provides an easy onramp and high-quality answers, with a small increase in latency.
-2. **Sequential Handoff:** Specialized agents (powered by realtime api) transfer the user between them to handle specific user intents. This is great for customer service, where user intents can be handled sequentially by specialist models that excel in a specific domains. This helps avoid the model having all instructions and tools in a single agent, which can degrade performance.
+This project includes two specialized AI agents:
+
+1. **Fastn Tools Agent:** Dynamically fetches and executes Fastn.ai tools for various integrations including Google Workspace, Slack, and other productivity platforms.
+2. **Fastn Docs Agent:** Provides comprehensive assistance with Fastn documentation, best practices, and getting started guidance.
 
 ## Setup
 
 - This is a Next.js typescript app. Install dependencies with `npm i`.
 - Add your `OPENAI_API_KEY` to your env. Either add it to your `.bash_profile` or equivalent, or copy `.env.sample` to `.env` and add it there.
 - Start the server with `npm run dev`
-- Open your browser to [http://localhost:3000](http://localhost:3000). It should default to the `chatSupervisor` Agent Config.
-- You can change examples via the "Scenario" dropdown in the top right.
+- Open your browser to [http://localhost:3000](http://localhost:3000). It should default to the `Fastn Tools` Agent.
+- You can switch between agents via the "Agent Set" dropdown in the bottom toolbar.
 
-# Agentic Pattern 1: Chat-Supervisor
+# Agent Architecture
 
-This is demonstrated in the [chatSupervisor](src/app/agentConfigs/chatSupervisor/index.ts) Agent Config. The chat agent uses the realtime model to converse with the user and handle basic tasks, like greeting the user, casual conversation, and collecting information, and a more intelligent, text-based supervisor model (e.g. `gpt-4.1`) is used extensively to handle tool calls and more challenging responses. You can control the decision boundary by "opting in" specific tasks to the chat agent as desired.
+## Fastn Tools Agent
 
-Video walkthrough: [https://x.com/noahmacca/status/1927014156152058075](https://x.com/noahmacca/status/1927014156152058075)
+The Fastn Tools Agent dynamically fetches and executes tools from the Fastn.ai platform. It can:
+- Access Google Workspace (Docs, Sheets, Calendar)
+- Integrate with Slack for messaging and notifications
+- Handle various productivity and workflow automation tasks
+- Provide intelligent tool selection based on user requests
 
-## Example
-![Screenshot of the Chat Supervisor Flow](/public/screenshot_chat_supervisor.png)
-*In this exchange, note the immediate response to collect the phone number, and the deferral to the supervisor agent to handle the tool call and formulate the response. There ~2s between the end of "give me a moment to check on that." being spoken aloud and the start of the "Thanks for waiting. Your last bill...".*
+## Fastn Docs Agent
 
-## Schematic
+The Fastn Docs Agent specializes in providing assistance with Fastn documentation and knowledge base. It can:
+- Answer questions about Fastn features and capabilities
+- Provide getting started guidance and tutorials
+- Explain best practices and usage patterns
+- Help troubleshoot common issues
+- Offer examples and code snippets
+
+## Screenshots
+
+### Fastn Tools Agent in Action
+![Fastn Tools Agent Screenshot](/public/fastn-tool-agent.png)
+*The Fastn Tools Agent dynamically executing tools for Google Workspace, Slack, and other integrations*
+
+### Fastn Docs Agent Interface  
+![Fastn Docs Agent Screenshot](/public/FastnDocs-Agent.png)
+*The Fastn Docs Agent providing comprehensive documentation assistance and guidance*
+
+## How It Works
+
 ```mermaid
 sequenceDiagram
     participant User
-    participant ChatAgent as Chat Agent<br/>(gpt-4o-realtime-mini)
-    participant Supervisor as Supervisor Agent<br/>(gpt-4.1)
-    participant Tool as Tool
+    participant FastnAgent as Fastn Voice Agent<br/>(gpt-4o-realtime-mini)
+    participant FastnAPI as Fastn.ai API<br/>(Dynamic Tools)
+    participant ExternalTool as External Tool<br/>(Google/Slack/etc)
 
-    alt Basic chat or info collection
-        User->>ChatAgent: User message
-        ChatAgent->>User: Responds directly
-    else Requires higher intelligence and/or tool call
-        User->>ChatAgent: User message
-        ChatAgent->>User: "Let me think"
-        ChatAgent->>Supervisor: Forwards message/context
-        alt Tool call needed
-            Supervisor->>Tool: Calls tool
-            Tool->>Supervisor: Returns result
+    alt [Simple queries or basic chat]
+        User->>FastnAgent: "Hello" or "How are you?"
+        FastnAgent->>User: Responds directly
+    else [Tool execution required]
+        User->>FastnAgent: "Create a Google Doc called 'Meeting Notes'"
+        FastnAgent->>User: "Let me help you with that"
+        FastnAgent->>FastnAPI: Fetch available tools & execute
+        alt [Tool call needed]
+            FastnAPI->>ExternalTool: Execute tool action
+            ExternalTool->>FastnAPI: Returns result
         end
-        Supervisor->>ChatAgent: Returns response
-        ChatAgent->>User: Delivers response
+        FastnAPI->>FastnAgent: Tool execution response
+        FastnAgent->>User: "Document created successfully!"
     end
+
+    Note over User, ExternalTool: Fastn Voice Agent handles both direct responses and complex tool integrations
 ```
 
 ## Benefits
-- **Simpler onboarding.** If you already have a performant text-based chat agent, you can give that same prompt and set of tools to the supervisor agent, and make some tweaks to the chat agent prompt, you'll have a natural voice agent that will perform on par with your text agent.
-- **Simple ramp to a full realtime agent**: Rather than switching your whole agent to the realtime api, you can move one task at a time, taking time to validate and build trust for each before deploying to production.
-- **High intelligence**: You benefit from the high intelligence, excellent tool calling and instruction following of models like `gpt-4.1` in your voice agents.
-- **Lower cost**: If your chat agent is only being used for basic tasks, you can use the realtime-mini model, which, even when combined with GPT-4.1, should be cheaper than using the full 4o-realtime model.
-- **User experience**: It's a more natural conversational experience than using a stitched model architecture, where response latency is often 1.5s or longer after a user has finished speaking. In this architecture, the model responds to the user right away, even if it has to lean on the supervisor agent.
-  - However, more assistant responses will start with "Let me think", rather than responding immediately with the full response.
+- **Voice-First Interface**: Natural conversation experience with low-latency responses
+- **Dynamic Tool Access**: Automatically discovers and uses the latest Fastn.ai tools
+- **Specialized Knowledge**: Dedicated documentation agent for comprehensive Fastn guidance  
+- **Seamless Integration**: Direct connection to Fastn.ai platform and third-party services
+- **Modular Design**: Easy to extend with additional agents for specific use cases
+- **Intelligent Routing**: Automatically selects the right tools based on user intent
 
-## Modifying for your own agent
-1. Update [supervisorAgent](src/app/agentConfigs/chatSupervisorDemo/supervisorAgent.ts).
-  - Add your existing text agent prompt and tools if you already have them. This should contain the "meat" of your voice agent logic and be very specific with what it should/shouldn't do and how exactly it should respond. Add this information below `==== Domain-Specific Agent Instructions ====`.
-  - You should likely update this prompt to be more appropriate for voice, for example with instructions to be concise and avoiding long lists of items.
-2. Update [chatAgent](src/app/agentConfigs/chatSupervisor/index.ts).
-  - Customize the chatAgent instructions with your own tone, greeting, etc.
-  - Add your tool definitions to `chatAgentInstructions`. We recommend a brief yaml description rather than json to ensure the model doesn't get confused and try calling the tool directly.
-  - You can modify the decision boundary by adding new items to the `# Allow List of Permitted Actions` section.
-3. To reduce cost, try using `gpt-4o-mini-realtime` for the chatAgent and/or `gpt-4.1-mini` for the supervisor model. To maximize intelligence on particularly difficult or high-stakes tasks, consider trading off latency and adding chain-of-thought to your supervisor prompt, or using an additional reasoning model-based supervisor that uses `o4-mini`.
+## Configuration
 
-## Schematic
+The application is configured with two main agent sets:
 
-This diagram illustrates a more advanced interaction flow defined in `src/app/agentConfigs/customerServiceRetail/`, including detailed events.
+1. **Fastn Tools Agent** (`src/app/agentConfigs/fastnAgent.ts`)
+   - Dynamically fetches available tools from Fastn.ai platform
+   - Handles complex tool execution workflows
+   - Provides intelligent parameter mapping and validation
 
-<details>
-<summary><strong>Show CustomerServiceRetail Flow Diagram</strong></summary>
+2. **Fastn Docs Agent** (`src/app/agentConfigs/fastnDocsAgent.ts`)  
+   - Connects to Fastn serviceAgent API for documentation queries
+   - Provides contextual help and examples
+   - Assists with onboarding and troubleshooting
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant WebClient as Next.js Client
-    participant NextAPI as /api/session
-    participant RealtimeAPI as OpenAI Realtime API
-    participant AgentManager as Agents (authentication, returns, sales, simulatedHuman)
-    participant o1mini as "o4-mini" (Escalation Model)
+### Adding Custom Agents
 
-    Note over WebClient: User navigates to ?agentConfig=customerServiceRetail
-    User->>WebClient: Open Page
-    WebClient->>NextAPI: GET /api/session
-    NextAPI->>RealtimeAPI: POST /v1/realtime/sessions
-    RealtimeAPI->>NextAPI: Returns ephemeral session
-    NextAPI->>WebClient: Returns ephemeral token (JSON)
+To add your own agent:
+1. Create a new agent configuration in `src/app/agentConfigs/`
+2. Add the agent to the `allAgentSets` mapping in `src/app/agentConfigs/index.ts`
+3. Update the UI selector options in `src/app/components/BottomToolbar.tsx`
 
-    Note right of WebClient: Start RTC handshake
-    WebClient->>RealtimeAPI: Offer SDP (WebRTC)
-    RealtimeAPI->>WebClient: SDP answer
-    WebClient->>WebClient: DataChannel "oai-events" established
+## API Integration
 
-    Note over AgentManager: Default agent is "authentication"
-    User->>WebClient: "Hi, I'd like to return my snowboard."
-    WebClient->>AgentManager: conversation.item.create (role=user)
-    WebClient->>RealtimeAPI: {type: "conversation.item.create"}
-    WebClient->>RealtimeAPI: {type: "response.create"}
+The application integrates with Fastn.ai through two main endpoints:
 
-    authentication->>AgentManager: Requests user info, calls authenticate_user_information()
-    AgentManager-->>WebClient: function_call => name="authenticate_user_information"
-    WebClient->>WebClient: handleFunctionCall => verifies details
+- **Tools API**: `https://live.fastn.ai/api/ucl/getTools` - Retrieves available tools
+- **Execution API**: `https://live.fastn.ai/api/ucl/executeTool` - Executes tools with parameters  
+- **ServiceAgent API**: `https://live.fastn.ai/api/v1/serviceAgent` - Queries documentation
 
-    Note over AgentManager: After user is authenticated
-    authentication->>AgentManager: transferAgents("returns")
-    AgentManager-->>WebClient: function_call => name="transferAgents" args={ destination: "returns" }
-    WebClient->>WebClient: setSelectedAgentName("returns")
+## Usage
 
-    Note over returns: The user wants to process a return
-    returns->>AgentManager: function_call => checkEligibilityAndPossiblyInitiateReturn
-    AgentManager-->>WebClient: function_call => name="checkEligibilityAndPossiblyInitiateReturn"
+### Interacting with Fastn Tools Agent
+- "Create a new Google Doc called 'Meeting Notes'"  
+- "Send a Slack message to the team channel"
+- "Schedule a meeting for tomorrow at 2pm"
+- "Add a new row to my project tracking sheet"
 
-    Note over WebClient: The WebClient calls /api/chat/completions with model="o4-mini"
-    WebClient->>o1mini: "Is this item eligible for return?"
-    o1mini->>WebClient: "Yes/No (plus notes)"
-
-    Note right of returns: Returns uses the result from "o4-mini"
-    returns->>AgentManager: "Return is approved" or "Return is denied"
-    AgentManager->>WebClient: conversation.item.create (assistant role)
-    WebClient->>User: Displays final verdict
-```
-
-</details>
-
-# Other Info
-## Next Steps
-- You can copy these templates to make your own multi-agent voice app! Once you make a new agent set config, add it to `src/app/agentConfigs/index.ts` and you should be able to select it in the UI in the "Scenario" dropdown menu.
-- Each agentConfig can define instructions, tools, and toolLogic. By default all tool calls simply return `True`, unless you define the toolLogic, which will run your specific tool logic and return an object to the conversation (e.g. for retrieved RAG context).
-- If you want help creating your own prompt using the conventions shown in customerServiceRetail, including defining a state machine, we've included a metaprompt [here](src/app/agentConfigs/voiceAgentMetaprompt.txt), or you can use our [Voice Agent Metaprompter GPT](https://chatgpt.com/g/g-678865c9fb5c81918fa28699735dd08e-voice-agent-metaprompt-gpt)
+### Interacting with Fastn Docs Agent  
+- "How do I get started with Fastn?"
+- "What integrations does Fastn support?"
+- "Show me examples of workflow automation"
+- "Help me troubleshoot my API connection"
 
 ## Output Guardrails
 Assistant messages are checked for safety and compliance before they are shown in the UI.  The guardrail call now lives directly inside `src/app/App.tsx`: when a `response.text.delta` stream starts we mark the message as **IN_PROGRESS**, and once the server emits `guardrail_tripped` or `response.done` we mark the message as **FAIL** or **PASS** respectively.  If you want to change how moderation is triggered or displayed, search for `guardrail_tripped` inside `App.tsx` and tweak the logic there.
 
 ## Navigating the UI
-- You can select agent scenarios in the Scenario dropdown, and automatically switch to a specific agent with the Agent dropdown.
-- The conversation transcript is on the left, including tool calls, tool call responses, and agent changes. Click to expand non-message elements.
+- You can switch between agent sets using the "Agent Set" dropdown in the bottom toolbar.
+- The conversation transcript is on the left, including tool calls, tool call responses, and agent actions. Click to expand non-message elements.
 - The event log is on the right, showing both client and server events. Click to see the full payload.
-- On the bottom, you can disconnect, toggle between automated voice-activity detection or PTT, turn off audio playback, and toggle logs.
+- On the bottom toolbar, you can disconnect, toggle between automated voice-activity detection or push-to-talk, turn off audio playback, toggle logs, and select different agents.
 
-## Pull Requests
+## Contributing
 
-Feel free to open an issue or pull request and we'll do our best to review it. The spirit of this repo is to demonstrate the core logic for new agentic flows; PRs that go beyond this core scope will likely not be merged.
+This project demonstrates voice-enabled AI agents for Fastn.ai integration. Feel free to extend it with additional agents, tools, or integrations that enhance the Fastn workflow automation experience.

@@ -3,8 +3,8 @@ import { RealtimeAgent, tool, RealtimeItem } from '@openai/agents/realtime';
 // Helper function to fetch tools from Fastn API
 async function getFastnTools(): Promise<any[]> {
   const headers = {
-    "x-fastn-api-key": process.env.FASTN_API_KEY || '45056b6686c080ff487468bfe5485e8f0533dacd',
-    "x-fastn-space-id": process.env.FASTN_SPACE_ID || '7efa79f9-bd46-46c2-b1d7-7680ba7442eb',
+    "x-fastn-api-key": process.env.FASTN_API_KEY,
+    "x-fastn-space-id": process.env.FASTN_SPACE_ID,
     "x-fastn-space-tenantid": "",
     "stage": "LIVE",
     "x-fastn-custom-auth": "true",
@@ -33,8 +33,8 @@ async function getFastnTools(): Promise<any[]> {
 // Helper function to execute a tool via Fastn API
 async function executeFastnTool(actionId: string, parameters: any): Promise<any> {
   const headers = {
-    "x-fastn-api-key": process.env.FASTN_API_KEY || '45056b6686c080ff487468bfe5485e8f0533dacd',
-    "x-fastn-space-id": process.env.FASTN_SPACE_ID || '7efa79f9-bd46-46c2-b1d7-7680ba7442eb',
+    "x-fastn-api-key": process.env.FASTN_API_KEY ,
+    "x-fastn-space-id": process.env.FASTN_SPACE_ID ,
     "x-fastn-space-tenantid": "",
     "stage": "LIVE",
     "x-fastn-custom-auth": "true",
@@ -111,7 +111,7 @@ export const callFastnAPI = tool({
     const now = new Date().toISOString();
     // Prepare the body for the /api/responses call to let OpenAI decide which Fastn tool to use
     const body: any = {
-      model: 'gpt-4.1-mini', // Or another suitable model
+      model: 'gpt-5-mini', // Or another suitable model
       input: [
         {
           type: 'message',
@@ -132,7 +132,6 @@ export const callFastnAPI = tool({
     * Google Docs Update Specifics: Ensure 'location' and 'index' parameters are correctly passed for updates to avoid failures.and pass location index as 1 for first time after creation.
     * Slack:
     * '#channelName' can be used as both channel ID and name. Pass it as the ID if provided in this format.
-    * Use Blocks for SendMessage if you think data should be informat dont send raw data.
     * For sending messages: If the user provides names for recipients, use a helper function (if available) to retrieve their Slack user IDs. If multiple matches occur for a name, you may need to ask the user to clarify. Send the message using the retrieved IDs.
     *Google Calendar:
         *Creating Meetings Requires a title and a date. state time and end time and zone should be US make sure you are passing time dont miss any parameters.
@@ -142,6 +141,11 @@ export const callFastnAPI = tool({
             "properties": {
               "title": "ask user to provide a title for the sheet or use a default title from context"
             }
+          }
+        - Slack Example Use Blocks If needed With Correct Format if You Know => {
+            "channel": "#channelName or use the channel ID",
+            "text": "Hello, team! This is a message from the Fastn agent.",
+            "blocks": []
           }
         * Current Date: ${now}
           `,
@@ -247,3 +251,6 @@ export const fastnAgent = new RealtimeAgent({
 });
 
 export const fastnScenario = [fastnAgent];
+
+// Name of the company represented by this agent set. Used by guardrails
+export const fastnCompanyName = 'Fastn.ai';
