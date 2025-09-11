@@ -2,9 +2,9 @@ import { RealtimeAgent, tool, RealtimeItem } from '@openai/agents/realtime';
 
 // Helper function to fetch tools from Fastn API
 async function getFastnTools(): Promise<any[]> {
-  const headers = {
-    "x-fastn-api-key": process.env.FASTN_API_KEY,
-    "x-fastn-space-id": process.env.FASTN_SPACE_ID,
+  const headers: Record<string, string> = {
+    "x-fastn-api-key": process.env.FASTN_API_KEY || '',
+    "x-fastn-space-id": process.env.FASTN_SPACE_ID || '',
     "x-fastn-space-tenantid": "",
     "stage": "LIVE",
     "x-fastn-custom-auth": "true",
@@ -32,9 +32,9 @@ async function getFastnTools(): Promise<any[]> {
 
 // Helper function to execute a tool via Fastn API
 async function executeFastnTool(actionId: string, parameters: any): Promise<any> {
-  const headers = {
-    "x-fastn-api-key": process.env.FASTN_API_KEY ,
-    "x-fastn-space-id": process.env.FASTN_SPACE_ID ,
+  const headers: Record<string, string> = {
+    "x-fastn-api-key": process.env.FASTN_API_KEY || '',
+    "x-fastn-space-id": process.env.FASTN_SPACE_ID || '',
     "x-fastn-space-tenantid": "",
     "stage": "LIVE",
     "x-fastn-custom-auth": "true",

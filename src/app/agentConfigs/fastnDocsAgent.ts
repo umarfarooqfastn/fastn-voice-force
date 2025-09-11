@@ -2,7 +2,7 @@ import { RealtimeAgent, tool } from '@openai/agents/realtime';
 
 // Function to call the Fastn serviceAgent API for documentation queries
 async function callFastnServiceAgent(prompt: string): Promise<any> {
-  const headers = {
+  const headers: Record<string, string> = {
     "x-fastn-api-key": "788d0051-1750-4e65-8b5b-3f6955acb4d1",
     "Content-Type": "application/json",
     "x-fastn-space-id": "befb54b6-3d51-465c-a6f0-8e8c7bdf782d",

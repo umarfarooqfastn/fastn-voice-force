@@ -22,11 +22,58 @@ This project includes two specialized AI agents:
 
 ## Setup
 
-- This is a Next.js typescript app. Install dependencies with `npm i`.
-- Add your `OPENAI_API_KEY` to your env. Either add it to your `.bash_profile` or equivalent, or copy `.env.sample` to `.env` and add it there.
-- Start the server with `npm run dev`
-- Open your browser to [http://localhost:3000](http://localhost:3000). It should default to the `Fastn Tools` Agent.
-- You can switch between agents via the "Agent Set" dropdown in the bottom toolbar.
+### Prerequisites
+- Node.js (v16 or higher)
+- OpenAI API key
+- Fastn.ai API credentials
+
+### Installation
+
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Environment Configuration**
+   
+   Copy the sample environment file and configure your API keys:
+   ```bash
+   cp .env.sample .env
+   ```
+   
+   Update `.env` with your credentials:
+   ```env
+   # OpenAI API Key - Required for voice agent functionality
+   OPENAI_API_KEY=your_openai_api_key_here
+   
+   # Fastn Tools Agent - Get these from https://ucl.dev/
+   FASTN_API_KEY=your_fastn_tools_api_key
+   FASTN_SPACE_ID=your_fastn_tools_space_id
+   ```
+   
+   > **Note**: The Fastn Docs Agent uses pre-configured credentials and doesn't require additional setup.
+
+### Getting API Credentials
+
+- **OpenAI API Key**: Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+- **Fastn Tools API Credentials**: Visit [Fastn UCL Platform](https://ucl.dev/) to:
+  - Create your account and workspace
+  - Generate API keys for your tools integration
+  - Get your Space ID from your workspace settings
+  
+> The Fastn Docs Agent comes pre-configured with documentation access and doesn't require separate API credentials.
+
+### Running the Application
+
+1. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
+
+2. **Open Application**
+   - Navigate to [http://localhost:3000](http://localhost:3000)
+   - The app defaults to the `Fastn Tools` Agent
+   - Switch between agents using the "Agent Set" dropdown in the bottom toolbar
 
 # Agent Architecture
 
@@ -144,6 +191,22 @@ Assistant messages are checked for safety and compliance before they are shown i
 - The event log is on the right, showing both client and server events. Click to see the full payload.
 - On the bottom toolbar, you can disconnect, toggle between automated voice-activity detection or push-to-talk, turn off audio playback, toggle logs, and select different agents.
 
+## Resources
+
+### Fastn Platform
+- **[Fastn UCL Platform](https://ucl.dev/)** - Get your API keys and manage your Fastn workspace
+- **[Fastn Documentation](https://docs.fastn.ai/)** - Complete guide to Fastn features and integrations
+
+### Developer
+- **[Umar Farooq LinkedIn](https://www.linkedin.com/in/umar-farooq-71b99223a/)** - Connect with the developer
+- **[Umar Farooq Portfolio](https://umarfarooq75011hglp9l9p.contra.com)** - View portfolio and projects
+
+### OpenAI
+- **[OpenAI Platform](https://platform.openai.com/)** - Manage your OpenAI API keys
+- **[Realtime API Documentation](https://platform.openai.com/docs/guides/realtime)** - Learn about the Realtime API
+
 ## Contributing
 
 This project demonstrates voice-enabled AI agents for Fastn.ai integration. Feel free to extend it with additional agents, tools, or integrations that enhance the Fastn workflow automation experience.
+
+For questions, suggestions, or collaboration opportunities, reach out via [LinkedIn](https://www.linkedin.com/in/umar-farooq-71b99223a/) or check out the [developer's portfolio](https://umarfarooq75011hglp9l9p.contra.com).
