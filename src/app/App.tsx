@@ -12,6 +12,7 @@ import BottomToolbar from "./components/BottomToolbar";
 
 // Types
 import { SessionStatus } from "@/app/types";
+import type { RealtimeAgent } from '@openai/agents/realtime';
 
 // Context providers & hooks
 import { useTranscript } from "@/app/contexts/TranscriptContext";
@@ -19,7 +20,16 @@ import { useEvent } from "@/app/contexts/EventContext";
 import { useRealtimeSession } from "./hooks/useRealtimeSession";
 
 // Agent configs
-import { fastnScenario } from "./agentConfigs/fastnAgent";
+import { allAgentSets, defaultAgentSetKey } from "./agentConfigs";
+import { fastnScenario, fastnCompanyName } from "./agentConfigs/fastnAgent";
+import { fastnDocsScenario, fastnDocsCompanyName } from "./agentConfigs/fastnDocsAgent";
+import { createModerationGuardrail } from "@/app/agentConfigs/guardrails";
+
+// Map used by connect logic for scenarios defined via the SDK.
+const sdkScenarioMap: Record<string, RealtimeAgent[]> = {
+  fastn: fastnScenario,
+  fastnDocs: fastnDocsScenario,
+};
 
 import useAudioDownload from "./hooks/useAudioDownload";
 import { useHandleSessionHistory } from "./hooks/useHandleSessionHistory";
@@ -92,6 +102,15 @@ function App() {
       return stored ? stored === 'true' : true;
     },
   );
+  const [selectedAgent, setSelectedAgent] = useState<string>(() => {
+    if (typeof window === 'undefined') return defaultAgentSetKey;
+    const stored = localStorage.getItem('selectedAgent');
+    return stored || defaultAgentSetKey;
+  });
+  const [selectedAgentName, setSelectedAgentName] = useState<string>("");
+  const [selectedAgentConfigSet, setSelectedAgentConfigSet] = useState<
+    RealtimeAgent[] | null
+  >(null);
 
   // Initialize the recording hook.
   const { startRecording, stopRecording, downloadRecording } =
@@ -108,12 +127,33 @@ function App() {
 
   useHandleSessionHistory();
 
+  // Effect to set agent config based on selectedAgent
   useEffect(() => {
-    if (sessionStatus === "CONNECTED") {
-      addTranscriptBreadcrumb(`Agent: fastn`);
+    const agentSet = sdkScenarioMap[selectedAgent];
+    if (agentSet) {
+      setSelectedAgentConfigSet(agentSet);
+      if (agentSet.length > 0 && !selectedAgentName) {
+        setSelectedAgentName(agentSet[0].name);
+      }
+    }
+    if (selectedAgentName && sessionStatus === "DISCONNECTED") {
+      connectToRealtime();
+    }
+  }, [selectedAgent, selectedAgentName]);
+
+  useEffect(() => {
+    if (
+      sessionStatus === "CONNECTED" &&
+      selectedAgentConfigSet &&
+      selectedAgentName
+    ) {
+      const currentAgent = selectedAgentConfigSet.find(
+        (a) => a.name === selectedAgentName
+      );
+      addTranscriptBreadcrumb(`Agent: ${selectedAgentName}`, currentAgent);
       updateSession(true);
     }
-  }, [sessionStatus]);
+  }, [selectedAgentConfigSet, selectedAgentName, sessionStatus]);
 
   useEffect(() => {
     if (sessionStatus === "CONNECTED") {
@@ -141,21 +181,39 @@ function App() {
     if (sessionStatus !== "DISCONNECTED") return;
     setSessionStatus("CONNECTING");
 
-    try {
-      const EPHEMERAL_KEY = await fetchEphemeralKey();
-      if (!EPHEMERAL_KEY) return;
+    const agentSetKey = selectedAgent;
+    if (sdkScenarioMap[agentSetKey]) {
+      try {
+        const EPHEMERAL_KEY = await fetchEphemeralKey();
+        if (!EPHEMERAL_KEY) return;
 
-      await connect({
-        getEphemeralKey: async () => EPHEMERAL_KEY,
-        initialAgents: fastnScenario,
-        audioElement: sdkAudioElement,
-        extraContext: {
-          addTranscriptBreadcrumb,
-        },
-      });
-    } catch (err) {
-      console.error("Error connecting via SDK:", err);
-      setSessionStatus("DISCONNECTED");
+        // Ensure the selectedAgentName is first so that it becomes the root
+        const reorderedAgents = [...sdkScenarioMap[agentSetKey]];
+        const idx = reorderedAgents.findIndex((a) => a.name === selectedAgentName);
+        if (idx > 0) {
+          const [agent] = reorderedAgents.splice(idx, 1);
+          reorderedAgents.unshift(agent);
+        }
+
+        const companyName = agentSetKey === 'fastn'
+          ? fastnCompanyName
+          : agentSetKey === 'fastnDocs'
+          ? fastnDocsCompanyName
+          : 'Fastn.ai';
+
+        await connect({
+          getEphemeralKey: async () => EPHEMERAL_KEY,
+          initialAgents: reorderedAgents,
+          audioElement: sdkAudioElement,
+          extraContext: {
+            addTranscriptBreadcrumb,
+          },
+          outputGuardrails: [createModerationGuardrail(companyName)],
+        });
+      } catch (err) {
+        console.error("Error connecting via SDK:", err);
+        setSessionStatus("DISCONNECTED");
+      }
     }
   };
 
@@ -257,6 +315,23 @@ function App() {
     window.location.replace(url.toString());
   };
 
+  const handleAgentChange = (newAgent: string) => {
+    if (sessionStatus === "CONNECTED" || sessionStatus === "CONNECTING") {
+      // Disconnect if currently connected
+      disconnectFromRealtime();
+    }
+    setSelectedAgent(newAgent);
+    setSelectedAgentName(""); // Reset agent name so effect will pick first one
+  };
+
+  const handleAgentNameChange = (agentName: string) => {
+    // Reconnect session with the newly selected agent as root so that tool
+    // transfers and greetings work correctly for the chosen agent.
+    disconnectFromRealtime();
+    setSelectedAgentName(agentName);
+    // connectToRealtime will be triggered by effect watching selectedAgentName
+  };
+
   useEffect(() => {
     const storedPushToTalkUI = localStorage.getItem("pushToTalkUI");
     if (storedPushToTalkUI) {
@@ -288,6 +363,10 @@ function App() {
       isAudioPlaybackEnabled.toString()
     );
   }, [isAudioPlaybackEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem("selectedAgent", selectedAgent);
+  }, [selectedAgent]);
 
   useEffect(() => {
     if (audioElementRef.current) {
@@ -387,6 +466,11 @@ function App() {
         setIsAudioPlaybackEnabled={setIsAudioPlaybackEnabled}
         codec={urlCodec}
         onCodecChange={handleCodecChange}
+        selectedAgent={selectedAgent}
+        onAgentChange={handleAgentChange}
+        selectedAgentName={selectedAgentName}
+        onAgentNameChange={handleAgentNameChange}
+        selectedAgentConfigSet={selectedAgentConfigSet}
       />
     </div>
   );
