@@ -1,55 +1,39 @@
 import { RealtimeAgent, tool, RealtimeItem } from '@openai/agents/realtime';
 
-// Helper function to fetch tools from Fastn API
+// Helper function to fetch tools from Fastn API via our server-side endpoint
 async function getFastnTools(): Promise<any[]> {
-  const headers: Record<string, string> = {
-    "x-fastn-api-key": process.env.FASTN_API_KEY || '',
-    "x-fastn-space-id": process.env.FASTN_SPACE_ID || '',
-    "x-fastn-space-tenantid": "",
-    "stage": "LIVE",
-    "x-fastn-custom-auth": "true",
-    "Content-Type": "application/json",
-  };
-  const resp = await fetch("https://live.fastn.ai/api/ucl/getTools", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ input: {} }),
+  const resp = await fetch('/api/fastn/tools', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
   });
+  
   if (!resp.ok) {
-    const errorText = await resp.text();
-    console.error("Failed to fetch Fastn tools:", resp.status, errorText);
-    throw new Error(`Failed to fetch Fastn tools: ${resp.status} ${errorText}`);
+    const errorData = await resp.json();
+    console.error("Failed to fetch Fastn tools:", resp.status, errorData);
+    throw new Error(`Failed to fetch Fastn tools: ${resp.status} ${errorData.error || 'Unknown error'}`);
   }
-  const data = await resp.json();
-  return data.map((tool: any) => ({
-    type: "function",
-    name: tool.function.name,
-    description: tool.function.description,
-    parameters: tool.function.parameters,
-    actionId: tool.actionId, // Store actionId for execution
-  }));
+  
+  return resp.json();
 }
 
-// Helper function to execute a tool via Fastn API
+// Helper function to execute a tool via Fastn API via our server-side endpoint
 async function executeFastnTool(actionId: string, parameters: any): Promise<any> {
-  const headers: Record<string, string> = {
-    "x-fastn-api-key": process.env.FASTN_API_KEY || '',
-    "x-fastn-space-id": process.env.FASTN_SPACE_ID || '',
-    "x-fastn-space-tenantid": "",
-    "stage": "LIVE",
-    "x-fastn-custom-auth": "true",
-    "Content-Type": "application/json",
-  };
-  const resp = await fetch("https://live.fastn.ai/api/ucl/executeTool", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({ input: { actionId, parameters } }),
+  const resp = await fetch('/api/fastn/execute', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ actionId, parameters }),
   });
+  
   if (!resp.ok) {
-    const errorText = await resp.text();
-    console.error("Failed to execute Fastn tool:", resp.status, errorText);
-    throw new Error(`Failed to execute Fastn tool: ${resp.status} ${errorText}`);
+    const errorData = await resp.json();
+    console.error("Failed to execute Fastn tool:", resp.status, errorData);
+    throw new Error(`Failed to execute Fastn tool: ${resp.status} ${errorData.error || 'Unknown error'}`);
   }
+  
   return resp.json();
 }
 
