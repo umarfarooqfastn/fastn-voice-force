@@ -18,11 +18,13 @@ export async function POST(req: NextRequest) {
     headers.append("stage", "LIVE");
     headers.append("x-fastn-custom-auth", "true");
     headers.append("Content-Type", "application/json");
+
+    const agentId = process.env.FASTN_SPACE_ID || '';
     
     const resp = await fetch("https://live.fastn.ai/api/ucl/executeTool", {
       method: "POST",
       headers,
-      body: JSON.stringify({ input: { actionId, parameters } }),
+      body: JSON.stringify({ input: { actionId, parameters, agentId } }),
     });
 
     if (!resp.ok) {

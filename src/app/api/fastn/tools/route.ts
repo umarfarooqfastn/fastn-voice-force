@@ -28,7 +28,12 @@ export async function POST() {
     const resp = await fetch("https://live.fastn.ai/api/ucl/getTools", {
       method: "POST",
       headers,
-      body: JSON.stringify({ input: {} }),
+      body: JSON.stringify({ 
+        input: { 
+          agentId: process.env.FASTN_SPACE_ID,
+          limit: 500 
+        } 
+      }),
     });
 
     console.log("Response status:", resp.status);
